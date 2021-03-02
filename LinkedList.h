@@ -38,7 +38,8 @@ public:
 
 	LinkedList() {};
 	~LinkedList() {
-
+        delete head;
+        head = NULL;
     };
 
 	/*

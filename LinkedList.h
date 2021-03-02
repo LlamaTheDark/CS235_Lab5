@@ -3,7 +3,9 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <typeinfo>
+#include <stdexcept>
 #include "LinkedListInterface.h"
 
 
@@ -27,6 +29,8 @@ private:
         }
     };
 
+    bool isEmpty() { return length == 0; }
+
     Node *head = NULL;
     int length = 0;
 
@@ -47,10 +51,11 @@ public:
 	virtual void insertHead(T value) {
         if(isEmpty()){
             head = new Node(value);
+            length++;
         }else if(!contains(value)){
             head = new Node(value, head);
+            length++;
         }
-        length++;
     }
 
 	/*
@@ -63,9 +68,12 @@ public:
 	virtual void insertTail(T value){
         if(isEmpty()){
             head = new Node(value);
+            length++;
         }else if(!contains(value)){
             Node *tmp;
-            for(tmp = head; tmp != NULL; tmp = tmp->next); // will take us all the way to the tail
+            for(tmp = head; tmp->next != NULL; tmp = tmp->next){
+                std::cout << "\t" << tmp->item << std::endl;
+            } // will take us all the way to the tail
             tmp->next = new Node(value);
             length++;
         }
@@ -78,14 +86,18 @@ public:
 	node whose value is equal to insertionNode.
 
 	A node should only be added if the node whose value is equal to
-	insertionNode is in the list. Do not allow duplicate values in the list.
+	afterValue is in the list. Do not allow duplicate values in the list.
+    
+    inserts value after the node containing afterValue
 	*/
-	virtual void insertAfter(T value, T afterValue){
-        Node *tmp = find(afterValue);
-        if(tmp != NULL){
-            Node *newNode = new Node(value, tmp->next);
-            tmp->next = newNode;
-            length++;
+	virtual void insertAfter(T value, T afterValue){ 
+        if(!contains(value)){
+            Node *tmp = find(afterValue);
+            if(tmp != NULL){
+                Node *newNode = new Node(value, tmp->next);
+                tmp->next = newNode;
+                length++;
+            }
         }
     }
 
@@ -101,7 +113,7 @@ public:
             Node *tmp = find(value, true);
             if(tmp != NULL){
                 Node *tmpDel;
-                if(tmp == head){
+                if(compare(head->item, value) == 0){
                     tmpDel = head;
                     head = head->next;
                 } else {
@@ -110,8 +122,8 @@ public:
                 }
                 tmpDel->next = NULL;
                 delete tmpDel;
+                length--;
             }
-            length--;
         }
     }
 
@@ -136,7 +148,22 @@ public:
 	If the given index is out of range of the list, throw an out of range exception.
 	*/
 	virtual T at(int index){ 
-        return *(new T()); 
+        if(
+            index < 0 ||
+            index >= length
+        ){
+            throw std::out_of_range("given index is out of range of list");
+        }
+
+        // don't need to check for !isEmpty() because it'll be caught in the out_of_range exception;
+        Node *tmp = head;
+        int count = 0;
+        while(tmp != NULL && count < index){
+            tmp = tmp->next;
+            count++;
+        }
+
+        return tmp->item;
     };
 
 	/*
@@ -156,14 +183,19 @@ public:
 	"1 2 3 4 5"
 	*/
 	virtual std::string toString(){
+        if(isEmpty()){
+            return "";
+        }
+
         std::stringstream ss;
         ss.exceptions(std::ios_base::failbit);
         
         try {
             Node *tmp;
-            for(tmp = head; tmp != NULL; tmp = tmp->next){
+            for(tmp = head; tmp->next != NULL; tmp = tmp->next){
                 ss << tmp->item << " ";
             }
+            ss << tmp->item;
         } catch(std::ios_base::failure &ex) {
             std::cerr << "Error: " << ex.what() << std::endl;
             return "";
@@ -172,15 +204,11 @@ public:
         return ss.str();
     }
 
-
-    bool isEmpty() { return head == NULL; }
-
-
     /*
     Node *find(T, bool)
 
-    @param value: the value to be found within the array
-    @param returnPrevious: whether to return the Node that contains the array or that before it
+    @param value, the value to be found within the array
+    @param returnPreviou, whether to return the Node that contains the array or that before it
                            *has no effect if the value is at the head*
 
     returns a pointer to either the Node that contains the provided value, the Node before the 
@@ -209,19 +237,18 @@ public:
     returns 0 if equal, 1 otherwise
 
     */
-    bool compare(T a, T b){
-        // if(typeid(T) == typeid(std::string)) return compareString(a, b);
+    bool compare(T &a, T &b){
         if(a == b){
             return 0;
         }
         return 1;
     }
-    // bool compareString(std::string a, std::string b){
-    //     if(a.compare(b) == 0){
+    // bool compare(std::string *a, std::string *b){
+    //     if(a->compare(*b) == 0){
     //         return 0;
     //     }
     //     return 1;
-    // } // this will not work with strings
+    // }
     
 
 };
